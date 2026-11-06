@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: restaurant-management
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/restaurant_db}
+    username: ${SPRING_DATASOURCE_USERNAME:restaurant_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:change_me}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
