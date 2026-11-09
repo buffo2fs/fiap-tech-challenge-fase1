@@ -5,7 +5,9 @@ import br.com.fiap.restaurant_management.domain.User;
 import br.com.fiap.restaurant_management.dto.AddressRequest;
 import br.com.fiap.restaurant_management.dto.AddressResponse;
 import br.com.fiap.restaurant_management.dto.UserResponse;
+import org.springframework.stereotype.Component;
 
+@Component
 public class UserMapper {
 
     public Address toAddress(AddressRequest request) {

@@ -53,7 +53,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         ProblemDetail problem = ex.getBody();
         problem.setTitle("Invalid request data");
-        problem.setDetail("One or more field are invalid.");
+        problem.setDetail("One or more fields are invalid.");
         problem.setProperty("errors", errors);
 
         return handleExceptionInternal(ex, problem, headers, status, request);
