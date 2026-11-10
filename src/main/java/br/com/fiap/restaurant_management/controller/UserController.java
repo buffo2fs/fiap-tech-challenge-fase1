@@ -2,6 +2,7 @@ package br.com.fiap.restaurant_management.controller;
 
 import br.com.fiap.restaurant_management.dto.CreateUserRequest;
 import br.com.fiap.restaurant_management.dto.PageResponse;
+import br.com.fiap.restaurant_management.dto.UpdateUserRequest;
 import br.com.fiap.restaurant_management.dto.UserResponse;
 import br.com.fiap.restaurant_management.service.UserService;
 import jakarta.validation.Valid;
@@ -44,5 +45,10 @@ public class UserController {
             @RequestParam @NotBlank String name,
             @PageableDefault(size = 10, sort = "name") Pageable pageable) {
         return ResponseEntity.ok(userService.searchByName(name, pageable));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
+        return ResponseEntity.ok(userService.update(id, request));
     }
 }

@@ -3,14 +3,12 @@ package br.com.fiap.restaurant_management.service;
 import br.com.fiap.restaurant_management.domain.Address;
 import br.com.fiap.restaurant_management.domain.User;
 import br.com.fiap.restaurant_management.domain.UserType;
-import br.com.fiap.restaurant_management.dto.AddressRequest;
-import br.com.fiap.restaurant_management.dto.CreateUserRequest;
-import br.com.fiap.restaurant_management.dto.PageResponse;
-import br.com.fiap.restaurant_management.dto.UserResponse;
+import br.com.fiap.restaurant_management.dto.*;
 import br.com.fiap.restaurant_management.exception.DuplicateResourceException;
 import br.com.fiap.restaurant_management.exception.ResourceNotFoundException;
 import br.com.fiap.restaurant_management.mapper.UserMapper;
 import br.com.fiap.restaurant_management.repository.UserRepository;
+import org.hibernate.sql.Update;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -145,5 +143,60 @@ class UserServiceTest {
     assertThat(result.content()).hasSize(1);
     assertThat(result.content().get(0).login()).isEqualTo(LOGIN);
     assertThat(result.totalElements()).isEqualTo(1);
+    }
+
+    private UpdateUserRequest updateRequest(String email, String login) {
+        return new UpdateUserRequest(
+                "Francisca Sousa",
+                email,
+                login,
+                new AddressRequest("Rua Nova", "500", "Campinas", "87657-888"));
+    }
+
+    @Test
+    void shouldUpdateUserProfileWithoutChangingPassword() {
+        User user = existingUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailAndIdNot("novo@example.com", 1L)).thenReturn(false);
+        when(userRepository.existsByLoginAndIdNot("novo.login", 1L)).thenReturn(false);
+        when(userRepository.saveAndFlush(user)).thenReturn(user);
+
+        UserResponse response = userService.update(1L, updateRequest(" Novo@Example.com ", "novo.login"));
+        assertThat(response.name()).isEqualTo("Francisca Sousa");
+        assertThat(response.login()).isEqualTo("novo.login");
+        assertThat(response.email()).isEqualTo("novo@example.com");
+        assertThat(response.address().city()).isEqualTo("Campinas");
+        assertThat(user.getPasswordHash()).isEqualTo("hashed-password");
+    }
+
+    @Test
+    void shouldRejectUpdateWithEmailFromAnotherUser() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser()));
+        when(userRepository.existsByEmailAndIdNot("outro@example.com", 1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.update(1L, updateRequest("outro@example.com", "novo.login")))
+                .isInstanceOf(DuplicateResourceException.class);
+
+        verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void shouldRejectUpdateWithLoginFromAnotherUser() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser()));
+        when(userRepository.existsByEmailAndIdNot("novo@example.com", 1L)).thenReturn(false);
+        when(userRepository.existsByLoginAndIdNot("outro.login", 1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.update(1L, updateRequest("novo@example.com", "outro.login")))
+                .isInstanceOf(DuplicateResourceException.class);
+
+        verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingUnknowUser() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.update(999L, updateRequest("novo@example.com", "novo.login")))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }

@@ -3,6 +3,7 @@ package br.com.fiap.restaurant_management.service;
 import br.com.fiap.restaurant_management.domain.User;
 import br.com.fiap.restaurant_management.dto.CreateUserRequest;
 import br.com.fiap.restaurant_management.dto.PageResponse;
+import br.com.fiap.restaurant_management.dto.UpdateUserRequest;
 import br.com.fiap.restaurant_management.dto.UserResponse;
 import br.com.fiap.restaurant_management.exception.DuplicateResourceException;
 import br.com.fiap.restaurant_management.exception.ResourceNotFoundException;
@@ -63,5 +64,23 @@ public class UserService {
     private User getUserOrThrow(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    @Transactional
+    public UserResponse update(Long id, UpdateUserRequest request) {
+        User user = getUserOrThrow(id);
+        String email = User.normalizeEmail(request.email());
+
+        if (userRepository.existsByEmailAndIdNot(email, id)) {
+            throw new DuplicateResourceException("User with email " + email + " already exists");
+        }
+        if (userRepository.existsByLoginAndIdNot(request.login(), id)) {
+            throw new DuplicateResourceException("Login is already in use.");
+        }
+
+        user.updateProfile(request.name(), email, request.login(),
+                userMapper.toAddress(request.address()));
+
+        return userMapper.toResponse(userRepository.saveAndFlush(user));
     }
 }
