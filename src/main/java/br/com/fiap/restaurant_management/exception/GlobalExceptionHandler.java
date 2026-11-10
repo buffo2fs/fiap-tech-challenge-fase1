@@ -1,8 +1,10 @@
 package br.com.fiap.restaurant_management.exception;
 
+import org.hibernate.annotations.PropertyRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,6 +38,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         return problem(HttpStatus.CONFLICT, "Data conflict", "The request conflicts with existing data.");
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ProblemDetail handleInvalidProperty(PropertyReferenceException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "Invalid request parameter", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

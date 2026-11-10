@@ -2,13 +2,16 @@ package br.com.fiap.restaurant_management.service;
 
 import br.com.fiap.restaurant_management.domain.User;
 import br.com.fiap.restaurant_management.dto.CreateUserRequest;
+import br.com.fiap.restaurant_management.dto.PageResponse;
 import br.com.fiap.restaurant_management.dto.UserResponse;
 import br.com.fiap.restaurant_management.exception.DuplicateResourceException;
+import br.com.fiap.restaurant_management.exception.ResourceNotFoundException;
 import br.com.fiap.restaurant_management.mapper.UserMapper;
 import br.com.fiap.restaurant_management.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class UserService {
@@ -43,5 +46,22 @@ public class UserService {
                 userMapper.toAddress(request.address()));
 
         return userMapper.toResponse(userRepository.save(user));
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse findById(Long id) {
+        return userMapper.toResponse(getUserOrThrow(id));
+    }
+
+    @Transactional
+    public PageResponse<UserResponse> searchByName(String name, Pageable pageable) {
+        return PageResponse.from(
+                userRepository.findByNameContainingIgnoreCase(name.trim(), pageable)
+                        .map(userMapper::toResponse));
+    }
+
+    private User getUserOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }
