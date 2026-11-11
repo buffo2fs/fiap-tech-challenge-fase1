@@ -4,12 +4,12 @@ import br.com.fiap.restaurant_management.dto.*;
 import br.com.fiap.restaurant_management.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.apache.coyote.Response;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.net.URI;
 
@@ -53,6 +53,12 @@ public class UserController {
     @PatchMapping("/{id}/password")
     public ResponseEntity<Void> changePassword(@PathVariable Long id, @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        userService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
