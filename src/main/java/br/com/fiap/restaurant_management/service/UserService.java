@@ -7,13 +7,10 @@ import br.com.fiap.restaurant_management.exception.InvalidCredentialsException;
 import br.com.fiap.restaurant_management.exception.ResourceNotFoundException;
 import br.com.fiap.restaurant_management.mapper.UserMapper;
 import br.com.fiap.restaurant_management.repository.UserRepository;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.data.domain.Pageable;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
