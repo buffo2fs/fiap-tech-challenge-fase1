@@ -12,6 +12,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Service
 public class UserService {
 
@@ -93,4 +96,13 @@ public class UserService {
         user.changePassword(passwordEncoder.encode(request.newPassword()));
         userRepository.saveAndFlush(user);
     }
+
+    @Transactional
+    public void delete(Long id) {
+        User user = getUserOrThrow(id);
+        user.markAsDeleted();
+        userRepository.saveAndFlush(user);
+    }
+
+
 }

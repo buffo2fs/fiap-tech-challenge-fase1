@@ -1,12 +1,14 @@
 package br.com.fiap.restaurant_management.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
 
 @Entity
 @Table(name = "users")
+@SQLRestriction("deleted_at IS NULL")
 public class User {
 
     @Id
@@ -16,10 +18,10 @@ public class User {
     @Column(name = "name", nullable = false, length = 150)
     private String name;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name = "login", nullable = false, unique = true)
+    @Column(name = "login", nullable = false, length = 50)
     private String login;
 
     @Column(name = "password_hash", nullable = false, unique = true, length = 50)
@@ -37,6 +39,9 @@ public class User {
 
     @Column(name = "last_modified_at", nullable = false)
     private LocalDateTime lastModifiedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     protected User() {
     }
@@ -60,6 +65,14 @@ public class User {
 
     public void changePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
+    }
+
+    public void markAsDeleted() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
     }
 
     public static String normalizeEmail(String email) {
@@ -113,5 +126,7 @@ public class User {
     public LocalDateTime getLastModifiedAt() {
         return lastModifiedAt;
     }
+
+
 
 }
