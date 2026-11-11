@@ -235,4 +235,27 @@ class UserServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
 
     }
+
+    @Test
+    void shouldSoftDeleteExistingUser() {
+        User user = existingUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.delete(1L);
+
+        assertThat(user.getDeletedAt()).isNotNull();
+        verify(userRepository).saveAndFlush(user);
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void shouldThrowWhenDeletingUnknownUser() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.delete(999L))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(userRepository, never()).saveAndFlush(any());
+    }
+
 }
