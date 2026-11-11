@@ -1,11 +1,9 @@
 package br.com.fiap.restaurant_management.service;
 
 import br.com.fiap.restaurant_management.domain.User;
-import br.com.fiap.restaurant_management.dto.CreateUserRequest;
-import br.com.fiap.restaurant_management.dto.PageResponse;
-import br.com.fiap.restaurant_management.dto.UpdateUserRequest;
-import br.com.fiap.restaurant_management.dto.UserResponse;
+import br.com.fiap.restaurant_management.dto.*;
 import br.com.fiap.restaurant_management.exception.DuplicateResourceException;
+import br.com.fiap.restaurant_management.exception.InvalidCredentialsException;
 import br.com.fiap.restaurant_management.exception.ResourceNotFoundException;
 import br.com.fiap.restaurant_management.mapper.UserMapper;
 import br.com.fiap.restaurant_management.repository.UserRepository;
@@ -82,5 +80,17 @@ public class UserService {
                 userMapper.toAddress(request.address()));
 
         return userMapper.toResponse(userRepository.saveAndFlush(user));
+    }
+
+    @Transactional
+    public void changePassword(Long id, ChangePasswordRequest request) {
+        User user = getUserOrThrow(id);
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException("Current password is incorrect.");
+        }
+
+        user.changePassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.saveAndFlush(user);
     }
 }

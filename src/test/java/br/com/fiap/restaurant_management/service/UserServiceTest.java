@@ -5,6 +5,7 @@ import br.com.fiap.restaurant_management.domain.User;
 import br.com.fiap.restaurant_management.domain.UserType;
 import br.com.fiap.restaurant_management.dto.*;
 import br.com.fiap.restaurant_management.exception.DuplicateResourceException;
+import br.com.fiap.restaurant_management.exception.InvalidCredentialsException;
 import br.com.fiap.restaurant_management.exception.ResourceNotFoundException;
 import br.com.fiap.restaurant_management.mapper.UserMapper;
 import br.com.fiap.restaurant_management.repository.UserRepository;
@@ -198,5 +199,40 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.update(999L, updateRequest("novo@example.com", "novo.login")))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void shoudlChangePasswordWhenCurrentPasswordMatches() {
+        User user = existingUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(PASSWORD, "hashed-password")).thenReturn(true);
+        when(passwordEncoder.encode("NovaSenha@123")).thenReturn("new-hashed-password");
+
+        userService.changePassword(1L, new ChangePasswordRequest(PASSWORD, "NovaSenha@123"));
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-hashed-password");
+        verify(userRepository).saveAndFlush(user);
+    }
+
+    @Test
+    void shouldRejectPasswordChangeWhenCurrentPasswordIsWrong() {
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser()));
+        when(passwordEncoder.matches("errado345", "hashed-password")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.changePassword(1L, new ChangePasswordRequest("errado345", "NovaSenha@123")))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        verify(passwordEncoder, never()).encode(any());
+        verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void shouldThrowWhenPasswordOfUnknownUser() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.changePassword(999L, new ChangePasswordRequest(PASSWORD, "NovaSenha@123")))
+                .isInstanceOf(ResourceNotFoundException.class);
+
     }
 }
