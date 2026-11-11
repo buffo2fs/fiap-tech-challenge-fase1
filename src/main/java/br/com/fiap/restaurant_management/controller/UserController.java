@@ -1,12 +1,10 @@
 package br.com.fiap.restaurant_management.controller;
 
-import br.com.fiap.restaurant_management.dto.CreateUserRequest;
-import br.com.fiap.restaurant_management.dto.PageResponse;
-import br.com.fiap.restaurant_management.dto.UpdateUserRequest;
-import br.com.fiap.restaurant_management.dto.UserResponse;
+import br.com.fiap.restaurant_management.dto.*;
 import br.com.fiap.restaurant_management.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.apache.coyote.Response;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -50,5 +48,11 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(userService.update(id, request));
+    }
+
+    @PatchMapping("/{id}/password")
+    public ResponseEntity<Void> changePassword(@PathVariable Long id, @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(id, request);
+        return ResponseEntity.noContent().build();
     }
 }
