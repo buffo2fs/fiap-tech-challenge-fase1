@@ -53,6 +53,53 @@
           "response": []
         },
         {
+          "name": "Login - get token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));\r",
+                  "pm.test(\"Token is returned\", () => pm.expect(pm.response.json().accessToken).to.be.a(\"string\"));\r",
+                  "pm.environment.set(\"accessToken\", pm.response.json().accessToken);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"login\": \"john.doe\",\r\n  \"password\": \"SecurePass123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Create User - Duplicate Email",
           "event": [
             {
@@ -150,6 +197,52 @@
             }
           ],
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJyZXN0YXVyYW50LW1hbmFnZW1lbnQiLCJzdWIiOiIxIiwiZXhwIjoxNzk1NjQ3NTgyLCJsb2dpbiI6ImpvaG4uZG9lIiwidHlwZSI6IkNVU1RPTUVSIiwiaWF0IjoxNzk1NjQzOTgyfQ.dcBHYnYqFrUChMFgVspi8-8DrzlzWzouhQqXULh3nCY",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by id - no token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
@@ -219,7 +312,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/users?name=Andre",
+              "raw": "{{baseUrl}}/api/v1/users?name=John",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -231,7 +324,7 @@
               "query": [
                 {
                   "key": "name",
-                  "value": "Andre"
+                  "value": "John"
                 }
               ]
             }
@@ -319,13 +412,13 @@
           "response": []
         },
         {
-          "name": "Update User - Not Found",
+          "name": "Update another user - forbidden",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));"
+                  "pm.test(\"Status code is 403\", () => pm.response.to.have.status(403));"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -555,7 +648,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"login\": \"john.d\",\r\n  \"password\": \"NewPass@456\"\r\n}",
+              "raw": "{\r\n  \"login\": \"john.d\",\r\n  \"password\": \"SecurePass123\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -733,6 +826,40 @@
           "response": []
         }
       ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
     }
   ]
 }
