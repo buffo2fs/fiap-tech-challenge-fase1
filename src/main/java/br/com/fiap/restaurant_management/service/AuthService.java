@@ -17,11 +17,13 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final TokenService tokenService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, TokenService tokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
+        this.tokenService = tokenService;
     }
 
     @Transactional
@@ -30,6 +32,9 @@ public class AuthService {
                 .filter(found -> passwordEncoder.matches(request.password(), found.getPasswordHash()))
                 .orElseThrow(() -> new InvalidCredentialsException(INVALID_CREDENTIALS));
 
-        return new LoginResponse("Login successful.", userMapper.toResponse(user));
+        String accessToken = tokenService.generate(user);
+        long expiresIn = tokenService.expiresInSeconds();
+
+        return new LoginResponse("Login successful.", tokenService.generate(user), "Bearer", tokenService.expiresInSeconds(), userMapper.toResponse(user));
     }
 }
