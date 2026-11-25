@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,6 +39,9 @@ class AuthServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private TokenService tokenService;
+
     @Spy
     private UserMapper userMapper;
 
@@ -53,10 +57,14 @@ class AuthServiceTest {
     void shouldLoginWithValidCredentials() {
         when(userRepository.findByLogin(LOGIN)).thenReturn(Optional.of(existingUser()));
         when(passwordEncoder.matches(PASSWORD, HASH)).thenReturn(true);
+        when(tokenService.generate(any(User.class))).thenReturn("fake-token");
+        when(tokenService.expiresInSeconds()).thenReturn(3600L);
 
         LoginResponse response = authService.login(new LoginRequest(LOGIN, PASSWORD));
 
         assertThat(response.user().login()).isEqualTo(LOGIN);
+        assertThat(response.accessToken()).isEqualTo("fake-token");
+        assertThat(response.tokenType()).isEqualTo("Bearer");
     }
 
     @Test
@@ -67,6 +75,8 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(new LoginRequest(LOGIN, "Errada@000")))
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("Invalid login or password.");
+
+        verify(tokenService, never()).generate(any());
     }
 
     @Test
@@ -78,5 +88,6 @@ class AuthServiceTest {
                 .hasMessage("Invalid login or password.");
 
         verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(tokenService, never()).generate(any());
     }
 }

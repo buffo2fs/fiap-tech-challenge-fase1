@@ -1,20 +1,30 @@
 openapi: 3.1.0
 info:
   title: Restaurant Management API
-  description: |
+  description: |-
     User management API for a shared restaurant management system.
-    Support customers and restaurants owners: registration, search by name, profile update,
-    password change, soft delete and login validation.
+    Supports customers and restaurant owners: registration, search by name,
+    profile update, password change, soft delete and login validation.
+    Protected endpoints require a JWT: call POST /api/v1/auth/login,
+    then click Authorize and paste the accessToken.
     Errors follow RFC 7807 (ProblemDetail).
   version: v1
 servers:
 - url: http://localhost:8080
   description: Generated server url
+security:
+- bearerAuth: []
+tags:
+- name: Authentication
+  description: Login validation and JWT issuing
+- name: Users
+  description: "User registration, search, update, password change and soft delete"
 paths:
   /api/v1/users/{id}:
     get:
       tags:
-      - user-controller
+      - Users
+      summary: Find a user by id
       operationId: findById
       parameters:
       - name: id
@@ -25,14 +35,27 @@ paths:
           format: int64
       responses:
         "200":
-          description: OK
+          description: User found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserResponse"
+        "401":
+          description: Missing or invalid token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     put:
       tags:
-      - user-controller
+      - Users
+      summary: Update own profile (password not included)
       operationId: update
       parameters:
       - name: id
@@ -49,14 +72,45 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: User updated
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Invalid fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Missing or invalid token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Users can only modify their own account
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Email or login already in use
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
-      - user-controller
+      - Users
+      summary: Delete own account (soft delete)
       operationId: delete
       parameters:
       - name: id
@@ -66,12 +120,31 @@ paths:
           type: integer
           format: int64
       responses:
-        "200":
-          description: OK
+        "204":
+          description: User deleted
+        "401":
+          description: Missing or invalid token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Users can only modify their own account
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /api/v1/users:
     get:
       tags:
-      - user-controller
+      - Users
+      summary: Search users by name (paginated)
       operationId: searchByName
       parameters:
       - name: name
@@ -87,14 +160,27 @@ paths:
           $ref: "#/components/schemas/Pageable"
       responses:
         "200":
-          description: OK
+          description: Page of users
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageResponseUserResponse"
+        "400":
+          description: Name is blank or sort is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Missing or invalid token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     post:
       tags:
-      - user-controller
+      - Users
+      summary: Register a new user (public)
       operationId: create
       requestBody:
         content:
@@ -103,16 +189,30 @@ paths:
               $ref: "#/components/schemas/CreateUserRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: User created
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Invalid fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Email or login already in use
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security: []
   /api/v1/auth/login:
     post:
       tags:
-      - auth-controller
+      - Authentication
+      summary: Validate login and password and return a JWT (public)
       operationId: login
       requestBody:
         content:
@@ -122,15 +222,29 @@ paths:
         required: true
       responses:
         "200":
-          description: OK
+          description: "Valid credentials, token issued"
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Login or password is blank
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Invalid login or password
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+      security: []
   /api/v1/users/{id}/password:
     patch:
       tags:
-      - user-controller
+      - Users
+      summary: Change own password
       operationId: changePassword
       parameters:
       - name: id
@@ -146,8 +260,32 @@ paths:
               $ref: "#/components/schemas/ChangePasswordRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "204":
+          description: Password changed
+        "400":
+          description: Invalid fields
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Missing or invalid token, or current password is incorrect"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Users can only modify their own account
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 components:
   schemas:
     AddressRequest:
@@ -188,7 +326,7 @@ components:
         name:
           type: string
           description: User's full name
-          example: John Doe
+          example: John Doe Silva
           maxLength: 150
           minLength: 0
         email:
@@ -200,52 +338,91 @@ components:
           minLength: 0
         login:
           type: string
-          description: User's login
-          example: Jhon.Doe
+          description: "User's login, 3 to 50 characters"
+          example: john.doe
           maxLength: 50
           minLength: 3
         address:
           $ref: "#/components/schemas/AddressRequest"
           description: User's address
-          example: 123
       required:
       - address
       - email
       - login
       - name
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        properties:
+          type: object
+          additionalProperties: {}
     AddressResponse:
       type: object
       properties:
         street:
           type: string
+          description: Street name
+          example: Rua dos Gatos
         number:
           type: string
+          description: Street number
+          example: "123"
         city:
           type: string
+          description: City name
+          example: São Paulo
         zipCode:
           type: string
+          description: ZIP code
+          example: 01310-100
     UserResponse:
       type: object
       properties:
         id:
           type: integer
           format: int64
+          description: User id
+          example: 1
         name:
           type: string
+          description: User's full name
+          example: John Doe
         email:
           type: string
+          description: User's email address
+          example: john.doe@example.com
         login:
           type: string
+          description: User's login
+          example: john.doe
         type:
           type: string
+          description: User's type
           enum:
           - CUSTOMER
           - RESTAURANT_OWNER
+          example: CUSTOMER
         address:
           $ref: "#/components/schemas/AddressResponse"
+          description: User's address
         lastModifiedAt:
           type: string
           format: date-time
+          description: Last modification date
+          example: 2026-11-25T19:30:00
     CreateUserRequest:
       type: object
       properties:
@@ -264,13 +441,13 @@ components:
           minLength: 0
         login:
           type: string
-          description: User's login
-          example: Jhon.Doe
+          description: "User's login, 3 to 50 characters"
+          example: john.doe
           maxLength: 50
           minLength: 3
         password:
           type: string
-          description: User's password
+          description: "User's password, 8 to 72 characters"
           example: SecurePass123
           maxLength: 72
           minLength: 8
@@ -297,12 +474,12 @@ components:
         login:
           type: string
           description: User's login
-          example: Jhon.Doe
+          example: john.doe
           minLength: 1
         password:
           type: string
           description: User's password
-          example: Secure@123
+          example: SecurePass123
           minLength: 1
       required:
       - login
@@ -312,19 +489,35 @@ components:
       properties:
         message:
           type: string
+          description: Result message
+          example: Login successful.
+        accessToken:
+          type: string
+          description: JWT to send in the Authorization header
+          example: eyJhbGciOiJIUzI1NiJ9...
+        tokenType:
+          type: string
+          description: Token type
+          example: Bearer
+        expiresIn:
+          type: integer
+          format: int64
+          description: Token lifetime in seconds
+          example: 3600
         user:
           $ref: "#/components/schemas/UserResponse"
+          description: Authenticated user
     ChangePasswordRequest:
       type: object
       properties:
         currentPassword:
           type: string
           description: Current password
-          example: Secure@123
+          example: SecurePass123
           minLength: 1
         newPassword:
           type: string
-          description: New password
+          description: "New password, 8 to 72 characters"
           example: NewSecure@456
           maxLength: 72
           minLength: 8
@@ -365,3 +558,8 @@ components:
         totalPages:
           type: integer
           format: int32
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

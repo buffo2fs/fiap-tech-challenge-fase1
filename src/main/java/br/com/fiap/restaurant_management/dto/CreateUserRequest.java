@@ -15,10 +15,10 @@ public record CreateUserRequest(
         @Schema(description = "User's email address", example = "john.doe@example.com")
         @NotBlank @Email @Size(max = 255) String email,
 
-        @Schema(description = "User's login", example = "Jhon.Doe")
+        @Schema(description = "User's login, 3 to 50 characters", example = "john.doe")
         @NotBlank @Size(min = 3, max = 50) String login,
 
-        @Schema(description = "User's password", example = "SecurePass123")
+        @Schema(description = "User's password, 8 to 72 characters", example = "SecurePass123")
         @NotBlank @Size(min = 8, max = 72) String password,
 
         @Schema(description = "User's type", example = "CUSTOMER")
@@ -26,5 +26,5 @@ public record CreateUserRequest(
 
         @Schema(description = "User's address")
         @NotNull @Valid AddressRequest address
-        ) {
+) {
 }
