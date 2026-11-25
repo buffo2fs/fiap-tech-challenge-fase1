@@ -1,5 +1,7 @@
 package br.com.fiap.restaurant_management.controller;
 
+import br.com.fiap.restaurant_management.config.ProblemDetailAuthenticationEntryPoint;
+import br.com.fiap.restaurant_management.config.SecurityConfig;
 import br.com.fiap.restaurant_management.domain.UserType;
 import br.com.fiap.restaurant_management.dto.AddressResponse;
 import br.com.fiap.restaurant_management.dto.CreateUserRequest;
@@ -10,9 +12,12 @@ import br.com.fiap.restaurant_management.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +27,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
+@Import({SecurityConfig.class, ProblemDetailAuthenticationEntryPoint.class})
 class UserControllerTest {
 
     private static final String VALID_BODY = """
@@ -54,10 +61,17 @@ class UserControllerTest {
     @MockitoBean
     private UserService userService;
 
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
+
     private UserResponse response() {
         AddressResponse address = new AddressResponse("Rua das Flores", "42", "Campinas", "13010-000");
         return new UserResponse(1L, "Carla Mendes", "carla@example.com", "carla.mendes",
                 UserType.CUSTOMER, address, LocalDateTime.now());
+    }
+
+    private static RequestPostProcessor loggedAs(long userId) {
+        return jwt().jwt(token -> token.subject(String.valueOf(userId)));
     }
 
     @Test
@@ -118,7 +132,7 @@ class UserControllerTest {
     void shouldReturnUserById() throws Exception {
         when(userService.findById(1L)).thenReturn(response());
 
-        mockMvc.perform(get("/api/v1/users/1"))
+        mockMvc.perform(get("/api/v1/users/1").with(loggedAs(1)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.login").value("carla.mendes"));
     }
@@ -128,14 +142,14 @@ class UserControllerTest {
         when(userService.findById(999L))
                 .thenThrow(new ResourceNotFoundException("User with id 999 not found"));
 
-        mockMvc.perform(get("/api/v1/users/999"))
+        mockMvc.perform(get("/api/v1/users/999").with(loggedAs(1)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.detail").value("User with id 999 not found"));
     }
 
     @Test
     void shouldDeleteUserAndReturn204() throws Exception {
-        mockMvc.perform(delete("/api/v1/users/1"))
+        mockMvc.perform(delete("/api/v1/users/1").with(loggedAs(1)))
                 .andExpect(status().isNoContent());
 
         verify(userService).delete(1L);
@@ -146,7 +160,25 @@ class UserControllerTest {
         doThrow(new ResourceNotFoundException("User with id 999 not found"))
                 .when(userService).delete(999L);
 
-        mockMvc.perform(delete("/api/v1/users/999"))
+        mockMvc.perform(delete("/api/v1/users/999").with(loggedAs(999)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturn401WhenTokenIsMissing() throws Exception {
+        mockMvc.perform(get("/api/v1/users/1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void shouldReturn403WhenDeletingAnotherUser() throws Exception {
+        mockMvc.perform(delete("/api/v1/users/2").with(loggedAs(1)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+
+        verifyNoInteractions(userService);
     }
 }
