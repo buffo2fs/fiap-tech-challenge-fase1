@@ -8,16 +8,16 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record UpdateUserRequest(
-        @Schema(description = "User's full name", example = "John Doe")
+        @Schema(description = "User's full name", example = "John Doe Silva")
         @NotBlank @Size(max = 150) String name,
 
         @Schema(description = "User's email address", example = "john.doe@example.com")
         @NotBlank @Email @Size(max = 255) String email,
 
-        @Schema(description = "User's login", example = "Jhon.Doe")
+        @Schema(description = "User's login, 3 to 50 characters", example = "john.doe")
         @NotBlank @Size(min = 3, max = 50) String login,
 
-        @Schema(description = "User's address", example = "123 Main St, City, State 12345")
+        @Schema(description = "User's address")
         @NotNull @Valid AddressRequest address
 ) {
 }
