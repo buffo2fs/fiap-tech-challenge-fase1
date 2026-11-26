@@ -83,7 +83,7 @@ Se a chave não for configurada, a aplicação não inicia, e o log mostra a men
 docker compose up --build -d
 ```
 
-O Compose sobe o PostgreSQL e a API. As tabelas são criadas automaticamente pelo Flyway. Aguarde cerca de 20 segundos e confira:
+O Compose sobe o PostgreSQL e a API. As tabelas e o usuário de exemplo são criados automaticamente pelo Flyway. Aguarde cerca de 20 segundos e confira:
 
 ```bash
 docker compose ps
@@ -113,11 +113,24 @@ O `-v` também apaga o volume do banco. Sem ele, os dados são mantidos para a p
 
 Se a porta 5432 já estiver em uso, altere `DB_PORT` no `.env`, por exemplo para `5433`.
 
+## Usuário de exemplo
+
+Ao subir com Docker Compose, a aplicação cria automaticamente um usuário para avaliação, sem nenhum passo manual:
+
+| Campo | Valor |
+|---|---|
+| Login | `avaliador` |
+| Senha | `Avaliador@123` |
+| Tipo | `CUSTOMER` |
+
+A senha é armazenada com hash BCrypt no banco. O usuário é criado por um script do Flyway (`db/seed`), ativado apenas pelo `docker-compose.yml`, por meio da variável `SPRING_FLYWAY_LOCATIONS`. Em outros ambientes, ele não é criado.
+
+Com ele, é possível testar todos os endpoints protegidos. Atualização, troca de senha e exclusão valem para a própria conta, de `id` 1.
+
 ## Autenticação
 
-1. Cadastre um usuário em `POST /api/v1/users`.
-2. Faça login em `POST /api/v1/auth/login`. A resposta contém o `accessToken`.
-3. Envie o token nas demais requisições:
+1. Faça login em `POST /api/v1/auth/login`, com o usuário de exemplo ou com um usuário cadastrado em `POST /api/v1/users`. A resposta contém o `accessToken`.
+2. Envie o token nas demais requisições:
 
 ```http
 Authorization: Bearer <accessToken>
@@ -173,7 +186,7 @@ Com a aplicação rodando, acesse `http://localhost:8080/swagger-ui.html`.
 
 Para testar as rotas protegidas:
 
-1. Execute `POST /api/v1/users` e depois `POST /api/v1/auth/login`, usando os exemplos já preenchidos.
+1. Execute `POST /api/v1/auth/login` com o usuário de exemplo (`avaliador` / `Avaliador@123`), ou cadastre um usuário em `POST /api/v1/users` e faça login com ele.
 2. Em **Server response → Response body**, copie o valor de `accessToken`: o texto longo que começa com `eyJ`, **sem aspas**. Não use o exemplo da seção **Responses**, que termina em `...`.
 3. Clique em **Authorize**, cole o token **sem a palavra `Bearer`**, porque o Swagger a adiciona automaticamente, e confirme.
 
@@ -183,7 +196,7 @@ A especificação OpenAPI também está disponível em [`docs/openapi.yaml`](doc
 
 A pasta [`postman`](postman) contém:
 
-- `restaurant-management-api.postman_collection.json`: 20 requisições, com cenários de sucesso e erro e testes automatizados
+- `restaurant-management-api.postman_collection.json`: 21 requisições, com cenários de sucesso e erro e testes automatizados
 - `restaurant-management-local.postman_environment.json`: environment local
 
 Como usar:
@@ -192,9 +205,9 @@ Como usar:
 2. Selecione o environment **Restaurant Management - Local**. No Runner, confira se ele também está selecionado.
 3. Clique com o botão direito na coleção → **Run collection** → **Run**.
 
-A coleção cadastra um usuário, faz login, salva o token automaticamente, testa todos os endpoints e, ao final, exclui o usuário. Por isso, ela pode ser executada várias vezes seguidas.
+A coleção cadastra um usuário próprio, faz login, salva o token automaticamente, testa todos os endpoints e, ao final, exclui esse usuário. Ela também valida o login do usuário de exemplo, sem alterá-lo. Por isso, pode ser executada várias vezes seguidas.
 
-Se a coleção for executada depois de testes manuais no Swagger, recrie o banco com `docker compose down -v` e `docker compose up -d`. Caso contrário, o cadastro inicial devolve `409`, porque o usuário de exemplo já existe.
+Se a coleção for executada depois de testes manuais no Swagger, recrie o banco com `docker compose down -v` e `docker compose up -d`. Caso contrário, o cadastro inicial devolve `409`, porque o usuário da coleção já existe.
 
 ## Testes automatizados
 
@@ -225,7 +238,9 @@ src/main/java/br/com/fiap/restaurant_management
 
 src/main/resources
 ├── application.yml
-└── db/migration  # Scripts do Flyway
+└── db
+    ├── migration # Estrutura do banco (Flyway)
+    └── seed      # Usuário de exemplo, ativado pelo Docker Compose
 ```
 
 ## Decisões técnicas
@@ -237,6 +252,8 @@ src/main/resources
 - **Cada usuário só altera a própria conta:** o id do token é comparado com o id da URL, e uma tentativa sobre outra conta recebe `403`.
 - **Validação do schema:** o Hibernate só valida (`ddl-auto: validate`). As alterações do banco são feitas exclusivamente por migrations do Flyway.
 
-## Autor
+## Integrantes
 
-Lucas Buffo – Pós-Tech FIAP
+| Nome | GitHub |
+|---|---|
+| Lucas Buffo | [buffo2fs](https://github.com/buffo2fs) |
