@@ -75,6 +75,8 @@ $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create
 
 Abra o `.env` e substitua o valor de `JWT_SECRET` pela chave gerada.
 
+Se a chave não for configurada, a aplicação não inicia, e o log mostra a mensagem `JWT_SECRET must be a Base64 key with at least 32 bytes`.
+
 ### 4. Suba a aplicação
 
 ```bash
@@ -169,7 +171,11 @@ Todos os erros seguem o padrão ProblemDetail (RFC 7807):
 
 Com a aplicação rodando, acesse `http://localhost:8080/swagger-ui.html`.
 
-Para testar as rotas protegidas: execute o login, copie o `accessToken` da resposta, clique em **Authorize** e cole o token.
+Para testar as rotas protegidas:
+
+1. Execute `POST /api/v1/users` e depois `POST /api/v1/auth/login`, usando os exemplos já preenchidos.
+2. Em **Server response → Response body**, copie o valor de `accessToken`: o texto longo que começa com `eyJ`, **sem aspas**. Não use o exemplo da seção **Responses**, que termina em `...`.
+3. Clique em **Authorize**, cole o token **sem a palavra `Bearer`**, porque o Swagger a adiciona automaticamente, e confirme.
 
 A especificação OpenAPI também está disponível em [`docs/openapi.yaml`](docs/openapi.yaml).
 
@@ -183,10 +189,12 @@ A pasta [`postman`](postman) contém:
 Como usar:
 
 1. No Postman, clique em **Import** e selecione os dois arquivos.
-2. Selecione o environment **Restaurant Management - Local**.
+2. Selecione o environment **Restaurant Management - Local**. No Runner, confira se ele também está selecionado.
 3. Clique com o botão direito na coleção → **Run collection** → **Run**.
 
 A coleção cadastra um usuário, faz login, salva o token automaticamente, testa todos os endpoints e, ao final, exclui o usuário. Por isso, ela pode ser executada várias vezes seguidas.
+
+Se a coleção for executada depois de testes manuais no Swagger, recrie o banco com `docker compose down -v` e `docker compose up -d`. Caso contrário, o cadastro inicial devolve `409`, porque o usuário de exemplo já existe.
 
 ## Testes automatizados
 
@@ -226,6 +234,7 @@ src/main/resources
 - **Troca de senha em endpoint separado:** a atualização de perfil nunca altera a senha. A troca exige a senha atual.
 - **Mesma resposta para login inexistente e senha incorreta:** evita revelar quais logins existem no sistema.
 - **Senhas com BCrypt:** a senha nunca é armazenada nem devolvida em texto puro.
+- **Cada usuário só altera a própria conta:** o id do token é comparado com o id da URL, e uma tentativa sobre outra conta recebe `403`.
 - **Validação do schema:** o Hibernate só valida (`ddl-auto: validate`). As alterações do banco são feitas exclusivamente por migrations do Flyway.
 
 ## Autor
