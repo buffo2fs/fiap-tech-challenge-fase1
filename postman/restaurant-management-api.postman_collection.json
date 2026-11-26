@@ -197,16 +197,6 @@
             }
           ],
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJyZXN0YXVyYW50LW1hbmFnZW1lbnQiLCJzdWIiOiIxIiwiZXhwIjoxNzk1NjQ3NTgyLCJsb2dpbiI6ImpvaG4uZG9lIiwidHlwZSI6IkNVU1RPTUVSIiwiaWF0IjoxNzk1NjQzOTgyfQ.dcBHYnYqFrUChMFgVspi8-8DrzlzWzouhQqXULh3nCY",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "header": [],
             "url": {
