@@ -18,11 +18,20 @@ import java.util.Base64;
 @EnableConfigurationProperties(JwtProperties.class)
 public class JwtConfig {
 
+    private static final String INVALID_SECRET_MESSAGE =
+            "JWT_SECRET must be a Base64 key with at least 32 bytes (256 bits). "
+                    + "Generate one as described in the README (step 3) and set it in the .env file.";
+
     @Bean
     public SecretKey jwtSecretKey(JwtProperties properties) {
-        byte[] keyBytes = Base64.getDecoder().decode(properties.secret());
+        byte[] keyBytes;
+        try {
+            keyBytes = Base64.getDecoder().decode(properties.secret());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalStateException(INVALID_SECRET_MESSAGE, ex);
+        }
         if (keyBytes.length < 32) {
-            throw new IllegalStateException("security.jwt.secret must have at least 256 bits (32 bytes)");
+            throw new IllegalStateException(INVALID_SECRET_MESSAGE);
         }
         return new SecretKeySpec(keyBytes, "HmacSHA256");
     }
